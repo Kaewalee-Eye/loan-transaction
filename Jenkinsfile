@@ -7,6 +7,10 @@ pipeline {
     IMAGE_TAG      = "${env.GIT_COMMIT}"
   }
 
+   parameters {
+     string(name: 'GIT_TAG', defaultValue: 'v0.0.3', description: 'Git tag to build (e.g., v0.0.3)')
+   }
+
   stages {
     stage('Clean') {
       steps { deleteDir() }
@@ -37,7 +41,7 @@ pipeline {
       steps {
         sh """
           docker buildx build --platform linux/amd64 \
-            -t ${DOCKERHUB_REPO}:${IMAGE_TAG} \
+            -t ${DOCKERHUB_REPO}:${params.GIT_TAG} \
             -t ${DOCKERHUB_REPO}:latest \
             --push .
         """
