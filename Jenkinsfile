@@ -16,28 +16,36 @@ pipeline {
       steps { checkout scm }
     }
 
-    stage('Docker Build (linux/amd64)') {
+    stage('Buildx Init') {
+      steps {
+        sh '''
+          docker buildx create --name multiarch --use >/dev/null 2>&1 || docker buildx use multiarch
+          docker buildx inspect --bootstrap
+        '''
+      }
+    }
+
+    stage('Docker Login') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: DOCKER_CREDS, usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+          sh 'echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin'
+        }
+      }
+    }
+
+    stage('Build & Push (linux/amd64)') {
       steps {
         sh """
-          docker build --platform=linux/amd64 \
+          docker buildx build --platform linux/amd64 \
             -t ${DOCKERHUB_REPO}:${IMAGE_TAG} \
             -t ${DOCKERHUB_REPO}:latest \
-            .
+            --push .
         """
       }
     }
 
-    stage('Docker Login & Push') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: DOCKER_CREDS, usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-          sh """
-            echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
-            docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
-            docker push ${DOCKERHUB_REPO}:latest
-            docker logout
-          """
-        }
-      }
+    stage('Logout') {
+      steps { sh 'docker logout || true' }
     }
   }
 }
