@@ -1,0 +1,17 @@
+# env / secrets
+.env
+*.env
+
+# Go build artifacts
+bin/
+dist/
+*.exe
+*.out
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# logs
+*.log
